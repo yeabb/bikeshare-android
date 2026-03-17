@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.bikeshare"
+    namespace = "com.bikeshare.app"
     compileSdk = 33
 
     defaultConfig {
-        applicationId = "com.example.bikeshare"
+        applicationId = "com.bikeshare.app"
         minSdk = 24
         targetSdk = 33
         versionCode = 1

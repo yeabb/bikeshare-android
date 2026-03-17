@@ -1,4 +1,4 @@
-package com.example.bikeshare
+package com.bikeshare.app
 
 import org.junit.Test
 

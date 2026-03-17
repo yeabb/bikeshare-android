@@ -1,4 +1,4 @@
-package com.example.bikeshare.ui.theme
+package com.bikeshare.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
