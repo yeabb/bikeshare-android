@@ -3,26 +3,45 @@ package com.bikeshare.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.bikeshare.app.auth.AuthRepository
+import com.bikeshare.app.auth.LoginScreen
+import com.bikeshare.app.auth.LoginViewModel
+import com.bikeshare.app.auth.OtpScreen
+import com.bikeshare.app.auth.OtpViewModel
+import com.bikeshare.app.core.navigation.Routes
+import com.bikeshare.app.core.network.ApiClient
+import com.bikeshare.app.core.storage.TokenStorage
 import com.bikeshare.app.ui.theme.BikeshareTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val tokenStorage = TokenStorage(this)
+
+        // If the user already has a saved token, go straight to home.
+        // Otherwise start at the login screen.
+        val startDestination = if (tokenStorage.isLoggedIn()) Routes.HOME else Routes.LOGIN
+
         setContent {
             BikeshareTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Greeting("Android")
+                    AppNavHost(startDestination = startDestination, tokenStorage = tokenStorage)
                 }
             }
         }
@@ -30,17 +49,57 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
+fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
+    val navController = rememberNavController()
+
+    // Set up shared dependencies used across screens
+    val apiService = ApiClient.create(tokenStorage)
+    val authRepository = AuthRepository(apiService, tokenStorage)
+
+    NavHost(navController = navController, startDestination = startDestination) {
+
+        composable(Routes.LOGIN) {
+            val viewModel = remember { LoginViewModel(authRepository) }
+            LoginScreen(
+                viewModel = viewModel,
+                onOtpSent = { phone, debugOtp ->
+                    navController.navigate("${Routes.OTP}/$phone?debugOtp=$debugOtp")
+                },
+            )
+        }
+
+        composable("${Routes.OTP}/{phone}?debugOtp={debugOtp}") { backStackEntry ->
+            val phone = backStackEntry.arguments?.getString("phone") ?: ""
+            val debugOtp = backStackEntry.arguments?.getString("debugOtp")
+            val viewModel = remember { OtpViewModel(authRepository) }
+            OtpScreen(
+                phone = phone,
+                debugOtp = debugOtp,
+                viewModel = viewModel,
+                onVerified = {
+                    navController.navigate(Routes.HOME) {
+                        // Clear Login + OTP from the back stack so Back doesn't return there
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    }
+                },
+            )
+        }
+
+        composable(Routes.HOME) {
+            // Placeholder — will be replaced with real HomeScreen
+            PlaceholderScreen("Home Screen")
+        }
+
+        composable(Routes.RIDE) {
+            // Placeholder — will be replaced with real RideScreen
+            PlaceholderScreen("Ride Screen")
+        }
+    }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-    BikeshareTheme {
-        Greeting("Android")
+fun PlaceholderScreen(name: String) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(text = name, style = MaterialTheme.typography.headlineMedium)
     }
 }
