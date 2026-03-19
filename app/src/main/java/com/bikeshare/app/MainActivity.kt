@@ -3,19 +3,17 @@ package com.bikeshare.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.bikeshare.app.auth.AuthRepository
+import com.bikeshare.app.home.HomeScreen
 import com.bikeshare.app.auth.LoginScreen
 import com.bikeshare.app.auth.LoginViewModel
 import com.bikeshare.app.auth.OtpScreen
@@ -86,20 +84,19 @@ fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
         }
 
         composable(Routes.HOME) {
-            // Placeholder — will be replaced with real HomeScreen
-            PlaceholderScreen("Home Screen")
+            HomeScreen(
+                onLogout = {
+                    tokenStorage.clearTokens()
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.HOME) { inclusive = true }
+                    }
+                }
+            )
         }
 
         composable(Routes.RIDE) {
-            // Placeholder — will be replaced with real RideScreen
-            PlaceholderScreen("Ride Screen")
+            // TODO: replace with real RideScreen
         }
     }
 }
 
-@Composable
-fun PlaceholderScreen(name: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = name, style = MaterialTheme.typography.headlineMedium)
-    }
-}
