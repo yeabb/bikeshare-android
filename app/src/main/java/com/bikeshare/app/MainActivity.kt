@@ -13,7 +13,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.bikeshare.app.auth.AuthRepository
+import com.bikeshare.app.home.HomeRepository
 import com.bikeshare.app.home.HomeScreen
+import com.bikeshare.app.home.HomeViewModel
 import com.bikeshare.app.auth.LoginScreen
 import com.bikeshare.app.auth.LoginViewModel
 import com.bikeshare.app.auth.OtpScreen
@@ -53,6 +55,7 @@ fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
     // Set up shared dependencies used across screens
     val apiService = ApiClient.create(tokenStorage)
     val authRepository = AuthRepository(apiService, tokenStorage)
+    val homeRepository = HomeRepository(apiService)
 
     NavHost(navController = navController, startDestination = startDestination) {
 
@@ -84,13 +87,15 @@ fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
         }
 
         composable(Routes.HOME) {
+            val viewModel = remember { HomeViewModel(homeRepository) }
             HomeScreen(
+                viewModel = viewModel,
                 onLogout = {
                     tokenStorage.clearTokens()
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.HOME) { inclusive = true }
                     }
-                }
+                },
             )
         }
 

@@ -40,6 +40,16 @@ data class ActiveRideResponse(
     val start_station: String,
 )
 
+data class StationDto(
+    val station_id: String,
+    val name: String,
+    val lat: Double,
+    val lng: Double,
+    val status: String,
+    val available_bikes: Int,
+    val open_docks: Int,
+)
+
 // ---------- Endpoints ----------
 
 interface ApiService {
@@ -60,6 +70,10 @@ interface ApiService {
 
     @GET("commands/{request_id}/")
     suspend fun getCommandStatus(@Path("request_id") requestId: String): Response<CommandStatusResponse>
+
+    // Stations
+    @GET("stations/")
+    suspend fun getStations(): Response<List<StationDto>>
 
     // Rides
     @GET("me/active-ride/")
