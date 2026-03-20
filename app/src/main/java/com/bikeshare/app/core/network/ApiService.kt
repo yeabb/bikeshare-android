@@ -37,7 +37,7 @@ data class ActiveRideResponse(
     val ride_id: String,
     val status: String,
     val started_at: String,
-    val start_station: String,
+    val start_station_id: String,
 )
 
 data class StationDto(
@@ -48,6 +48,7 @@ data class StationDto(
     val status: String,
     val available_bikes: Int,
     val open_docks: Int,
+    val bike_ids: List<String> = emptyList(),
 )
 
 // ---------- Endpoints ----------
