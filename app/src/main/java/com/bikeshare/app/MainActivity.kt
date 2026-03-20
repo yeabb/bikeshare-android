@@ -23,6 +23,9 @@ import com.bikeshare.app.auth.OtpViewModel
 import com.bikeshare.app.core.navigation.Routes
 import com.bikeshare.app.core.network.ApiClient
 import com.bikeshare.app.core.storage.TokenStorage
+import com.bikeshare.app.ride.RideRepository
+import com.bikeshare.app.ride.RideScreen
+import com.bikeshare.app.ride.RideViewModel
 import com.bikeshare.app.scan.ScanRepository
 import com.bikeshare.app.scan.ScanScreen
 import com.bikeshare.app.scan.ScanViewModel
@@ -60,6 +63,7 @@ fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
     val authRepository = AuthRepository(apiService, tokenStorage)
     val homeRepository = HomeRepository(apiService)
     val scanRepository = ScanRepository(apiService)
+    val rideRepository = RideRepository(apiService)
 
     NavHost(navController = navController, startDestination = startDestination) {
 
@@ -103,6 +107,11 @@ fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
                 onScanToUnlock = {
                     navController.navigate(Routes.SCAN)
                 },
+                onActiveRide = {
+                    navController.navigate(Routes.RIDE) {
+                        popUpTo(Routes.HOME) { inclusive = false }
+                    }
+                },
             )
         }
 
@@ -119,7 +128,15 @@ fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
         }
 
         composable(Routes.RIDE) {
-            // TODO: replace with real RideScreen
+            val viewModel = remember { RideViewModel(rideRepository) }
+            RideScreen(
+                viewModel = viewModel,
+                onRideEnded = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.RIDE) { inclusive = true }
+                    }
+                },
+            )
         }
     }
 }
