@@ -96,7 +96,20 @@ fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
                         popUpTo(Routes.HOME) { inclusive = true }
                     }
                 },
+                onScanToUnlock = {
+                    navController.navigate(Routes.SCAN)
+                },
             )
+        }
+
+        composable(Routes.SCAN) {
+            // TODO: replace with real QR scanner screen (task #17)
+            androidx.compose.foundation.layout.Box(
+                modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+            ) {
+                androidx.compose.material3.Text("QR Scanner coming soon")
+            }
         }
 
         composable(Routes.RIDE) {
