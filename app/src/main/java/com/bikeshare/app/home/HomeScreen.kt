@@ -42,15 +42,21 @@ import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: HomeViewModel, onLogout: () -> Unit, onScanToUnlock: () -> Unit) {
+fun HomeScreen(viewModel: HomeViewModel, onLogout: () -> Unit, onScanToUnlock: () -> Unit, onActiveRide: () -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.navigateToRide.collect { onActiveRide() }
+    }
 
     when (val state = uiState) {
         is HomeUiState.Loading -> {
@@ -104,9 +110,27 @@ private fun MapContent(stations: List<StationDto>, onLogout: () -> Unit, onScanT
     var userLocation by remember { mutableStateOf<Location?>(null) }
     val bottomSheetState = rememberModalBottomSheetState()
 
-    // Default fallback position (San Francisco, where simulator stations are)
+    // Fallback if location is unavailable — Addis Ababa city centre
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(37.77, -122.41), 13f)
+        position = CameraPosition.fromLatLngZoom(LatLng(9.03, 38.74), 13f)
+    }
+    var mapLoaded by remember { mutableStateOf(false) }
+
+    // Position camera once map is ready:
+    // - User location available → center on user at street level (nearby stations appear naturally)
+    // - No user location → fit to all stations so something useful is always visible
+    LaunchedEffect(mapLoaded, userLocation) {
+        if (!mapLoaded || stations.isEmpty()) return@LaunchedEffect
+        if (userLocation != null) {
+            cameraPositionState.move(
+                CameraUpdateFactory.newLatLngZoom(LatLng(userLocation!!.latitude, userLocation!!.longitude), 14f)
+            )
+        } else {
+            val bounds = LatLngBounds.Builder().apply {
+                stations.forEach { include(LatLng(it.lat, it.lng)) }
+            }.build()
+            cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 120))
+        }
     }
 
     // Ask for location permission, then move camera to user's location if granted
@@ -117,13 +141,8 @@ private fun MapContent(stations: List<StationDto>, onLogout: () -> Unit, onScanT
             LocationServices.getFusedLocationProviderClient(context)
                 .getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
                 .addOnSuccessListener { location ->
-                    if (location != null) {
+                    if (location != null && (location.latitude != 0.0 || location.longitude != 0.0)) {
                         userLocation = location
-                        cameraPositionState.move(
-                            CameraUpdateFactory.newLatLngZoom(
-                                LatLng(location.latitude, location.longitude), 13f
-                            )
-                        )
                     }
                 }
         }
@@ -137,6 +156,8 @@ private fun MapContent(stations: List<StationDto>, onLogout: () -> Unit, onScanT
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
+            onMapLoaded = { mapLoaded = true },
+            properties = MapProperties(isMyLocationEnabled = true),
         ) {
             stations.forEach { station ->
                 Marker(
@@ -253,6 +274,19 @@ private fun StationDetailSheet(
             StatItem(value = station.open_docks.toString(), label = "docks open for parking")
         }
 
+        if (station.bike_ids.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                "Bikes at this station",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            station.bike_ids.forEach { bikeId ->
+                Text(bikeId, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
 
         // Scan to unlock button
@@ -267,11 +301,10 @@ private fun StationDetailSheet(
 }
 
 private fun formatDistance(meters: Float): String {
-    val miles = meters / 1609.34f
-    return if (miles < 0.1f) {
-        "${(meters * 3.28084f).toInt()} ft away"
+    return if (meters < 1000f) {
+        "${meters.toInt()} m away"
     } else {
-        "%.1f mi away".format(miles)
+        "%.1f km away".format(meters / 1000f)
     }
 }
 

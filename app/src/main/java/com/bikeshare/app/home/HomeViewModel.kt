@@ -3,7 +3,9 @@ package com.bikeshare.app.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bikeshare.app.core.network.StationDto
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -13,13 +15,27 @@ sealed class HomeUiState {
     data class Error(val message: String) : HomeUiState()
 }
 
+
 class HomeViewModel(private val repository: HomeRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState
 
+    // Fires once if an active ride is detected on load — tells the screen to navigate to Ride
+    private val _navigateToRide = MutableSharedFlow<Unit>()
+    val navigateToRide: SharedFlow<Unit> = _navigateToRide
+
     init {
-        loadStations()
+        viewModelScope.launch {
+            // Check for active ride and load stations in parallel
+            val activeRideCheck = launch {
+                if (repository.hasActiveRide()) {
+                    _navigateToRide.emit(Unit)
+                }
+            }
+            loadStations()
+            activeRideCheck.join()
+        }
     }
 
     fun loadStations() {

@@ -23,4 +23,13 @@ class HomeRepository(
             HomeResult.Error("Network error. Check your connection.")
         }
     }
+
+    suspend fun hasActiveRide(): Boolean {
+        return try {
+            val response = apiService.getActiveRide()
+            response.isSuccessful
+        } catch (e: Exception) {
+            false
+        }
+    }
 }
