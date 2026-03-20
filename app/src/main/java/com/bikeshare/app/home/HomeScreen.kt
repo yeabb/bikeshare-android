@@ -162,6 +162,17 @@ private fun MapContent(stations: List<StationDto>, onLogout: () -> Unit, onScanT
         ) {
             Text("Log out")
         }
+
+        // Floating scan button — bottom center of map
+        Button(
+            onClick = onScanToUnlock,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 32.dp)
+                .fillMaxWidth(0.6f),
+        ) {
+            Text("Scan to Unlock")
+        }
     }
 
     if (selectedStation != null) {

@@ -23,6 +23,9 @@ import com.bikeshare.app.auth.OtpViewModel
 import com.bikeshare.app.core.navigation.Routes
 import com.bikeshare.app.core.network.ApiClient
 import com.bikeshare.app.core.storage.TokenStorage
+import com.bikeshare.app.scan.ScanRepository
+import com.bikeshare.app.scan.ScanScreen
+import com.bikeshare.app.scan.ScanViewModel
 import com.bikeshare.app.ui.theme.BikeshareTheme
 
 class MainActivity : ComponentActivity() {
@@ -56,6 +59,7 @@ fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
     val apiService = ApiClient.create(tokenStorage)
     val authRepository = AuthRepository(apiService, tokenStorage)
     val homeRepository = HomeRepository(apiService)
+    val scanRepository = ScanRepository(apiService)
 
     NavHost(navController = navController, startDestination = startDestination) {
 
@@ -103,13 +107,15 @@ fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
         }
 
         composable(Routes.SCAN) {
-            // TODO: replace with real QR scanner screen (task #17)
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                contentAlignment = androidx.compose.ui.Alignment.Center,
-            ) {
-                androidx.compose.material3.Text("QR Scanner coming soon")
-            }
+            val viewModel = remember { ScanViewModel(scanRepository) }
+            ScanScreen(
+                viewModel = viewModel,
+                onRideStarted = {
+                    navController.navigate(Routes.RIDE) {
+                        popUpTo(Routes.SCAN) { inclusive = true }
+                    }
+                },
+            )
         }
 
         composable(Routes.RIDE) {
