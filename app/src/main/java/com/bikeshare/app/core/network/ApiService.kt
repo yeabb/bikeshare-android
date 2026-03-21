@@ -38,6 +38,14 @@ data class ActiveRideResponse(
     val status: String,
     val started_at: String,
     val start_station_id: String,
+    val start_station_name: String,
+)
+
+data class CompletedRideResponse(
+    val ride_id: String,
+    val start_station_name: String,
+    val end_station_name: String?,
+    val duration_sec: Int?,
 )
 
 data class StationDto(
@@ -79,4 +87,7 @@ interface ApiService {
     // Rides
     @GET("me/active-ride/")
     suspend fun getActiveRide(): Response<ActiveRideResponse>
+
+    @GET("me/rides/{ride_id}/")
+    suspend fun getRide(@Path("ride_id") rideId: String): Response<CompletedRideResponse>
 }

@@ -5,9 +5,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,7 +26,6 @@ import androidx.compose.ui.unit.dp
 fun RideScreen(viewModel: RideViewModel, onRideEnded: () -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // When polling detects the ride ended, navigate home
     LaunchedEffect(uiState) {
         if (uiState is RideUiState.Completed) onRideEnded()
     }
@@ -33,6 +35,11 @@ fun RideScreen(viewModel: RideViewModel, onRideEnded: () -> Unit) {
             is RideUiState.Loading -> CircularProgressIndicator()
 
             is RideUiState.Active -> ActiveRideContent(state)
+
+            is RideUiState.Summary -> RideSummaryContent(
+                state = state,
+                onDone = { viewModel.onSummaryDismissed() },
+            )
 
             is RideUiState.Completed -> {
                 // Handled by LaunchedEffect — brief flash before navigating
@@ -65,7 +72,6 @@ private fun ActiveRideContent(state: RideUiState.Active) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Big elapsed timer
         Text(
             formatElapsed(state.elapsedSeconds),
             style = MaterialTheme.typography.displayLarge,
@@ -90,6 +96,62 @@ private fun ActiveRideContent(state: RideUiState.Active) {
     }
 }
 
+@Composable
+private fun RideSummaryContent(state: RideUiState.Summary, onDone: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.padding(32.dp),
+    ) {
+        Text(
+            "Ride complete",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            formatDuration(state.durationSec),
+            style = MaterialTheme.typography.displayLarge,
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        HorizontalDivider()
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        SummaryRow(label = "From", value = state.startStation)
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        SummaryRow(label = "To", value = state.endStation)
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        Button(
+            onClick = onDone,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Done")
+        }
+    }
+}
+
+@Composable
+private fun SummaryRow(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(value, style = MaterialTheme.typography.titleMedium)
+    }
+}
+
 private fun formatElapsed(seconds: Long): String {
     val hours = seconds / 3600
     val minutes = (seconds % 3600) / 60
@@ -98,5 +160,15 @@ private fun formatElapsed(seconds: Long): String {
         "%d:%02d:%02d".format(hours, minutes, secs)
     } else {
         "%d:%02d".format(minutes, secs)
+    }
+}
+
+private fun formatDuration(seconds: Int): String {
+    val minutes = seconds / 60
+    val secs = seconds % 60
+    return if (minutes > 0) {
+        "${minutes}m ${secs}s"
+    } else {
+        "${secs}s"
     }
 }
