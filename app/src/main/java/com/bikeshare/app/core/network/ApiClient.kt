@@ -38,6 +38,7 @@ object ApiClient {
         val okHttpClient = OkHttpClient.Builder()
             .addInterceptor(authInterceptor(tokenStorage))
             .addInterceptor(loggingInterceptor)
+            .authenticator(TokenAuthenticator(tokenStorage, BuildConfig.BASE_URL))
             .build()
 
         return Retrofit.Builder()

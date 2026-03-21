@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
@@ -22,6 +23,7 @@ import com.bikeshare.app.auth.OtpScreen
 import com.bikeshare.app.auth.OtpViewModel
 import com.bikeshare.app.core.navigation.Routes
 import com.bikeshare.app.core.network.ApiClient
+import com.bikeshare.app.core.network.AuthEventBus
 import com.bikeshare.app.core.storage.TokenStorage
 import com.bikeshare.app.ride.RideRepository
 import com.bikeshare.app.ride.RideScreen
@@ -57,6 +59,16 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
     val navController = rememberNavController()
+
+    // When the token refresh fails, the TokenAuthenticator signals logout via
+    // AuthEventBus. Collect that here and navigate back to login.
+    LaunchedEffect(Unit) {
+        AuthEventBus.logoutEvent.collect {
+            navController.navigate(Routes.LOGIN) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
 
     // Set up shared dependencies used across screens
     val apiService = ApiClient.create(tokenStorage)
