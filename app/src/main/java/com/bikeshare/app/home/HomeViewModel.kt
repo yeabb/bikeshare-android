@@ -15,26 +15,28 @@ sealed class HomeUiState {
     data class Error(val message: String) : HomeUiState()
 }
 
-
 class HomeViewModel(private val repository: HomeRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState
 
-    // Fires once if an active ride is detected on load — tells the screen to navigate to Ride
     private val _navigateToRide = MutableSharedFlow<Unit>()
     val navigateToRide: SharedFlow<Unit> = _navigateToRide
 
+    private val _rideCount = MutableStateFlow(0)
+    val rideCount: StateFlow<Int> = _rideCount
+
     init {
         viewModelScope.launch {
-            // Check for active ride and load stations in parallel
             val activeRideCheck = launch {
-                if (repository.hasActiveRide()) {
-                    _navigateToRide.emit(Unit)
-                }
+                if (repository.hasActiveRide()) _navigateToRide.emit(Unit)
+            }
+            val rideCountFetch = launch {
+                _rideCount.value = repository.getRideCount()
             }
             loadStations()
             activeRideCheck.join()
+            rideCountFetch.join()
         }
     }
 

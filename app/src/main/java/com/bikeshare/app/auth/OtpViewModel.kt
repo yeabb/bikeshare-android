@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
 sealed class OtpUiState {
     object Idle : OtpUiState()
     object Loading : OtpUiState()
-    object Success : OtpUiState()
+    data class Success(val nameRequired: Boolean) : OtpUiState()
     data class Error(val message: String) : OtpUiState()
 }
 
@@ -23,7 +23,7 @@ class OtpViewModel(private val repository: AuthRepository) : ViewModel() {
             _uiState.value = OtpUiState.Loading
 
             when (val result = repository.verifyOtp(phone, otp)) {
-                is AuthResult.Success -> _uiState.value = OtpUiState.Success
+                is AuthResult.Success -> _uiState.value = OtpUiState.Success(result.data)
                 is AuthResult.Error -> _uiState.value = OtpUiState.Error(result.message)
             }
         }

@@ -21,10 +21,17 @@ class TokenStorage(context: Context) {
 
     fun getRefreshToken(): String? = prefs.getString(KEY_REFRESH, null)
 
+    fun saveName(name: String) {
+        prefs.edit { putString(KEY_NAME, name) }
+    }
+
+    fun getName(): String? = prefs.getString(KEY_NAME, null)
+
     fun clearTokens() {
         prefs.edit {
             remove(KEY_ACCESS)
             remove(KEY_REFRESH)
+            remove(KEY_NAME)
         }
     }
 
@@ -33,5 +40,6 @@ class TokenStorage(context: Context) {
     companion object {
         private const val KEY_ACCESS = "access_token"
         private const val KEY_REFRESH = "refresh_token"
+        private const val KEY_NAME = "user_name"
     }
 }

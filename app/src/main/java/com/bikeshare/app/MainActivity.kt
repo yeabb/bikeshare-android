@@ -14,17 +14,22 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.bikeshare.app.auth.AuthRepository
-import com.bikeshare.app.home.HomeRepository
-import com.bikeshare.app.home.HomeScreen
-import com.bikeshare.app.home.HomeViewModel
 import com.bikeshare.app.auth.LoginScreen
 import com.bikeshare.app.auth.LoginViewModel
+import com.bikeshare.app.auth.NameScreen
+import com.bikeshare.app.auth.NameViewModel
 import com.bikeshare.app.auth.OtpScreen
 import com.bikeshare.app.auth.OtpViewModel
 import com.bikeshare.app.core.navigation.Routes
 import com.bikeshare.app.core.network.ApiClient
 import com.bikeshare.app.core.network.AuthEventBus
 import com.bikeshare.app.core.storage.TokenStorage
+import com.bikeshare.app.history.HistoryRepository
+import com.bikeshare.app.history.HistoryScreen
+import com.bikeshare.app.history.HistoryViewModel
+import com.bikeshare.app.home.HomeRepository
+import com.bikeshare.app.home.HomeScreen
+import com.bikeshare.app.home.HomeViewModel
 import com.bikeshare.app.ride.RideRepository
 import com.bikeshare.app.ride.RideScreen
 import com.bikeshare.app.ride.RideViewModel
@@ -38,9 +43,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val tokenStorage = TokenStorage(this)
-
-        // If the user already has a saved token, go straight to home.
-        // Otherwise start at the login screen.
         val startDestination = if (tokenStorage.isLoggedIn()) Routes.HOME else Routes.LOGIN
 
         setContent {
@@ -60,8 +62,6 @@ class MainActivity : ComponentActivity() {
 fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
     val navController = rememberNavController()
 
-    // When the token refresh fails, the TokenAuthenticator signals logout via
-    // AuthEventBus. Collect that here and navigate back to login.
     LaunchedEffect(Unit) {
         AuthEventBus.logoutEvent.collect {
             navController.navigate(Routes.LOGIN) {
@@ -70,7 +70,6 @@ fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
         }
     }
 
-    // Set up shared dependencies used across screens
     val apiService = ApiClient.create(tokenStorage)
     val authRepository = AuthRepository(apiService, tokenStorage)
     val homeRepository = HomeRepository(apiService)
@@ -97,10 +96,27 @@ fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
                 phone = phone,
                 debugOtp = debugOtp,
                 viewModel = viewModel,
-                onVerified = {
+                onVerified = { nameRequired ->
+                    if (nameRequired) {
+                        navController.navigate(Routes.NAME) {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        }
+                    }
+                },
+            )
+        }
+
+        composable(Routes.NAME) {
+            val viewModel = remember { NameViewModel(authRepository) }
+            NameScreen(
+                viewModel = viewModel,
+                onNameSet = {
                     navController.navigate(Routes.HOME) {
-                        // Clear Login + OTP from the back stack so Back doesn't return there
-                        popUpTo(Routes.LOGIN) { inclusive = true }
+                        popUpTo(Routes.NAME) { inclusive = true }
                     }
                 },
             )
@@ -110,20 +126,20 @@ fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
             val viewModel = remember { HomeViewModel(homeRepository) }
             HomeScreen(
                 viewModel = viewModel,
-                onLogout = {
-                    tokenStorage.clearTokens()
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(Routes.HOME) { inclusive = true }
-                    }
-                },
-                onScanToUnlock = {
-                    navController.navigate(Routes.SCAN)
-                },
+                name = tokenStorage.getName() ?: "",
+                onScanToUnlock = { navController.navigate(Routes.SCAN) },
                 onActiveRide = {
                     navController.navigate(Routes.RIDE) {
                         popUpTo(Routes.HOME) { inclusive = false }
                     }
                 },
+                onLogout = {
+                    tokenStorage.clearTokens()
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                onHistory = { navController.navigate(Routes.HISTORY) },
             )
         }
 
@@ -150,6 +166,14 @@ fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
                 },
             )
         }
+
+        composable(Routes.HISTORY) {
+            val historyRepository = HistoryRepository(apiService)
+            val viewModel = remember { HistoryViewModel(historyRepository) }
+            HistoryScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+            )
+        }
     }
 }
-

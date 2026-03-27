@@ -3,6 +3,7 @@ package com.bikeshare.app.core.network
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 
@@ -16,11 +17,13 @@ data class TokenRefreshRequest(val refresh: String)
 
 data class UnlockRequest(val bike_id: String)
 
+data class UpdateProfileRequest(val name: String)
+
 // ---------- Response bodies ----------
 
 data class RequestOtpResponse(val message: String, val otp: String?)
 
-data class UserDto(val id: String, val phone: String)
+data class UserDto(val id: String, val phone: String, val name: String?)
 
 data class VerifyOtpResponse(val access: String, val refresh: String, val user: UserDto)
 
@@ -46,7 +49,13 @@ data class CompletedRideResponse(
     val start_station_name: String,
     val end_station_name: String?,
     val duration_sec: Int?,
+    val started_at: String,
+    val status: String,
 )
+
+data class RideListResponse(val rides: List<CompletedRideResponse>)
+
+data class UpdateProfileResponse(val name: String)
 
 data class StationDto(
     val station_id: String,
@@ -84,9 +93,16 @@ interface ApiService {
     @GET("stations/")
     suspend fun getStations(): Response<List<StationDto>>
 
+    // Auth — profile
+    @PATCH("auth/me/")
+    suspend fun updateProfile(@Body body: UpdateProfileRequest): Response<UpdateProfileResponse>
+
     // Rides
     @GET("me/active-ride/")
     suspend fun getActiveRide(): Response<ActiveRideResponse>
+
+    @GET("me/rides/")
+    suspend fun getRides(): Response<RideListResponse>
 
     @GET("me/rides/{ride_id}/")
     suspend fun getRide(@Path("ride_id") rideId: String): Response<CompletedRideResponse>

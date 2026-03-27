@@ -1,6 +1,5 @@
 package com.bikeshare.app.auth
 
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -23,28 +22,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OtpScreen(
-    phone: String,
-    debugOtp: String?,
-    viewModel: OtpViewModel,
-    onVerified: (nameRequired: Boolean) -> Unit,
+fun NameScreen(
+    viewModel: NameViewModel,
+    onNameSet: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var name by remember { mutableStateOf("") }
 
-    // Pre-fill the OTP field with the debug OTP if the backend returned one.
-    // In production this will be an empty string — the user types the code from SMS.
-    var otp by remember { mutableStateOf(debugOtp ?: "") }
-
-    // Navigate as soon as verification succeeds.
     LaunchedEffect(uiState) {
-        if (uiState is OtpUiState.Success) {
-            onVerified((uiState as OtpUiState.Success).nameRequired)
-        }
+        if (uiState is NameUiState.Success) onNameSet()
     }
 
     Column(
@@ -55,14 +45,14 @@ fun OtpScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Enter verification code",
+            "What's your name?",
             style = MaterialTheme.typography.headlineMedium,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "We sent a 6-digit code to $phone",
+            "We'll use this to greet you in the app.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -70,20 +60,20 @@ fun OtpScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         OutlinedTextField(
-            value = otp,
-            onValueChange = { if (it.length <= 6) otp = it },
-            label = { Text("Verification code") },
-            placeholder = { Text("123456") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Your name") },
+            placeholder = { Text("e.g. Alex") },
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (uiState is OtpUiState.Error) {
+        if (uiState is NameUiState.Error) {
             Text(
-                text = (uiState as OtpUiState.Error).message,
+                (uiState as NameUiState.Error).message,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -91,18 +81,18 @@ fun OtpScreen(
         }
 
         Button(
-            onClick = { viewModel.verifyOtp(phone, otp) },
-            enabled = otp.length == 6 && uiState !is OtpUiState.Loading,
+            onClick = { viewModel.setName(name.trim()) },
+            enabled = name.isNotBlank() && uiState !is NameUiState.Loading,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            if (uiState is OtpUiState.Loading) {
+            if (uiState is NameUiState.Loading) {
                 CircularProgressIndicator(
                     color = MaterialTheme.colorScheme.onPrimary,
                     strokeWidth = 2.dp,
                     modifier = Modifier.height(18.dp),
                 )
             } else {
-                Text("Verify")
+                Text("Continue")
             }
         }
     }

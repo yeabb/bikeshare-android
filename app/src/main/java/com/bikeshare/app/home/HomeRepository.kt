@@ -32,4 +32,13 @@ class HomeRepository(
             false
         }
     }
+
+    suspend fun getRideCount(): Int {
+        return try {
+            val response = apiService.getRides()
+            if (response.isSuccessful) response.body()?.rides?.size ?: 0 else 0
+        } catch (e: Exception) {
+            0
+        }
+    }
 }
