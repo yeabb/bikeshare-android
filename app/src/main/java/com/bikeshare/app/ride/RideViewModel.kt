@@ -34,6 +34,7 @@ class RideViewModel(private val repository: RideRepository) : ViewModel() {
 
     // Held in memory so we can fetch the summary when the ride ends
     private var currentRideId: String? = null
+    private var currentStartStation: String = ""
     private var timerJob: Job? = null
 
     init {
@@ -45,6 +46,7 @@ class RideViewModel(private val repository: RideRepository) : ViewModel() {
             when (val result = repository.getActiveRide()) {
                 is RideResult.Active -> {
                     currentRideId = result.ride.ride_id
+                    currentStartStation = result.ride.start_station_name
                     val startTimeMs = parseStartedAt(result.ride.started_at)
                     startTimer(result.ride.ride_id, result.ride.start_station_name, startTimeMs)
                     startPolling()
@@ -57,6 +59,12 @@ class RideViewModel(private val repository: RideRepository) : ViewModel() {
 
     fun onSummaryDismissed() {
         _uiState.value = RideUiState.Completed
+    }
+
+    fun retry() {
+        timerJob?.cancel()
+        _uiState.value = RideUiState.Loading
+        loadRide()
     }
 
     // Ticks every second and updates elapsedSeconds in the Active state
@@ -109,7 +117,11 @@ class RideViewModel(private val repository: RideRepository) : ViewModel() {
                     durationSec = ride.duration_sec ?: 0,
                 )
             }
-            is CompletedRideResult.Error -> _uiState.value = RideUiState.Completed
+            is CompletedRideResult.Error -> _uiState.value = RideUiState.Summary(
+                startStation = currentStartStation.ifBlank { "—" },
+                endStation = "—",
+                durationSec = 0,
+            )
         }
     }
 

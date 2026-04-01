@@ -152,6 +152,7 @@ fun AppNavHost(startDestination: String, tokenStorage: TokenStorage) {
                         popUpTo(Routes.SCAN) { inclusive = true }
                     }
                 },
+                onBack = { navController.popBackStack() },
             )
         }
 

@@ -45,13 +45,17 @@ fun RideScreen(viewModel: RideViewModel, onRideEnded: () -> Unit) {
                 // Handled by LaunchedEffect — brief flash before navigating
             }
 
-            is RideUiState.Error -> {
+            is RideUiState.Error -> Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(32.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
                 Text(
                     state.message,
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(32.dp),
                 )
+                Button(onClick = { viewModel.retry() }) { Text("Retry") }
             }
         }
     }

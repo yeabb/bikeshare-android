@@ -41,14 +41,20 @@ class ScanViewModel(private val repository: ScanRepository) : ViewModel() {
                             _uiState.value = ScanUiState.Error(pollResult.message)
                             isProcessing = false
                         }
-                        else -> {}
+                        else -> {
+                            _uiState.value = ScanUiState.Error("Something went wrong. Please try again.")
+                            isProcessing = false
+                        }
                     }
                 }
                 is ScanResult.Error -> {
                     _uiState.value = ScanUiState.Error(unlockResult.message)
                     isProcessing = false
                 }
-                else -> {}
+                else -> {
+                    _uiState.value = ScanUiState.Error("Something went wrong. Please try again.")
+                    isProcessing = false
+                }
             }
         }
     }

@@ -51,7 +51,7 @@ import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.common.InputImage
 
 @Composable
-fun ScanScreen(viewModel: ScanViewModel, onRideStarted: () -> Unit) {
+fun ScanScreen(viewModel: ScanViewModel, onRideStarted: () -> Unit, onBack: () -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
     var hasCameraPermission by remember { mutableStateOf(false) }
 
@@ -75,11 +75,17 @@ fun ScanScreen(viewModel: ScanViewModel, onRideStarted: () -> Unit) {
             CameraPreview(onQrDetected = { viewModel.onBikeIdScanned(it) })
         } else if (!hasCameraPermission) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    "Camera permission is required to scan bike QR codes.",
-                    textAlign = TextAlign.Center,
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(32.dp),
-                )
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        "Camera permission is required to scan bike QR codes.",
+                        textAlign = TextAlign.Center,
+                    )
+                    Button(onClick = onBack) { Text("Go Back") }
+                }
             }
         }
 
