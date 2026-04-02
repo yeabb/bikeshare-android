@@ -14,6 +14,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,6 +36,7 @@ fun OtpScreen(
     onVerified: (nameRequired: Boolean) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val resendState by viewModel.resendState.collectAsState()
 
     // Pre-fill the OTP field with the debug OTP if the backend returned one.
     // In production this will be an empty string — the user types the code from SMS.
@@ -104,6 +106,32 @@ fun OtpScreen(
             } else {
                 Text("Verify")
             }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        when (val rs = resendState) {
+            is ResendState.Idle -> TextButton(
+                onClick = { viewModel.resendOtp(phone) },
+                enabled = uiState !is OtpUiState.Loading,
+            ) {
+                Text("Resend code")
+            }
+            is ResendState.Loading -> Text(
+                "Sending…",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            is ResendState.Sent -> Text(
+                "Code sent!",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            is ResendState.Error -> Text(
+                rs.message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
         }
     }
 }

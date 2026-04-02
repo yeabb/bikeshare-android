@@ -22,7 +22,12 @@ class AuthRepository(
                 val otp = response.body()?.otp
                 AuthResult.Success(otp ?: "")
             } else {
-                AuthResult.Error("Failed to send OTP. Please try again.")
+                val message = when (response.code()) {
+                    400 -> "Invalid phone number. Please use international format (e.g. +1 234 567 8900)."
+                    503 -> "Could not send SMS. Please try again in a moment."
+                    else -> "Failed to send OTP. Please try again."
+                }
+                AuthResult.Error(message)
             }
         } catch (e: Exception) {
             AuthResult.Error("Network error. Check your connection.")
@@ -41,7 +46,13 @@ class AuthRepository(
                 if (!nameRequired) tokenStorage.saveName(name!!)
                 AuthResult.Success(nameRequired)
             } else {
-                AuthResult.Error("Invalid OTP. Please try again.")
+                val errorBody = response.errorBody()?.string() ?: ""
+                val message = when {
+                    errorBody.contains("OTP_EXPIRED") ->
+                        "Your code has expired. Tap \"Resend code\" to get a new one."
+                    else -> "Invalid code. Please try again."
+                }
+                AuthResult.Error(message)
             }
         } catch (e: Exception) {
             AuthResult.Error("Network error. Check your connection.")
